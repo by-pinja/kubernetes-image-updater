@@ -12,7 +12,7 @@ namespace Updater.Domain
         public void WhenValidJsonIsRespondedFromCtl_ThenInvokeUpdateCommandsCorretly()
         {
             var shell = Substitute.For<ICommandLine>();
-            var updater = new ImageUpdater(shell);
+            var updater = new ImageUpdater(shell, Substitute.For<ILogger<ImageUpdater>>());
 
             shell.Run("kubectl get deployments --all-namespaces -o json")
                 .Returns(TestPathUtil.GetTestDataContent("realdata.json"));
@@ -26,7 +26,7 @@ namespace Updater.Domain
         public void WhenValidJsonIsRespondedFromCtl_ThenOnlyUpdateMatchingDeployments()
         {
             var shell = Substitute.For<ICommandLine>();
-            var updater = new ImageUpdater(shell);
+            var updater = new ImageUpdater(shell, Substitute.For<ILogger<ImageUpdater>>());
 
             shell.Run("kubectl get deployments --all-namespaces -o json")
                 .Returns(TestPathUtil.GetTestDataContent("realdata.json"));
