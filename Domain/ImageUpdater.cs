@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
 namespace Updater.Domain
@@ -7,8 +8,13 @@ namespace Updater.Domain
     public class ImageUpdater
     {
         private readonly ICommandLine _shell;
+        private readonly Microsoft.Extensions.Logging.ILogger<ImageUpdater> _logger;
 
-        public ImageUpdater(ICommandLine shell) => this._shell = shell;
+        public ImageUpdater(ICommandLine shell, ILogger<ImageUpdater> logger)
+        {
+            _shell = shell;
+            _logger = logger;
+        }
 
         public void UpdateEventHandler(string imageUri)
         {
@@ -47,7 +53,9 @@ namespace Updater.Domain
                         {
                             _shell.Run($"kubectl set image deployment/{image.DeplymentName} {image.ContainerName}={imageUri} --namespace={image.NameSpace}");
                         });
-                }, error => {});
+                }, error => {
+                    _logger.LogError($"Failed to fetch deployment json from kubernetes, error: {error}");
+                });
         }
     }
 }

@@ -10,9 +10,7 @@ podTemplate(label: 'kubernetes-image-updater',
   ]
 ) {
     def project = 'kubernetes-image-updater'
-
     def branch = (env.BRANCH_NAME)
-    def namespace = "kubernetes-image-updater-${branch}"
 
     node('kubernetes-image-updater') {
         stage('Checkout') {
@@ -21,7 +19,7 @@ podTemplate(label: 'kubernetes-image-updater',
         stage('Build') {
             container('dotnet') {
                 sh """
-                    dotnet publish -c release -o out
+                    dotnet build
                 """
             }
         }
@@ -32,10 +30,16 @@ podTemplate(label: 'kubernetes-image-updater',
                 """
             }
         }
-        stage('Package') {
-            container('docker') {
-                if(branch == 'master') {
-                    def publishedApi = publishContainerToGcr(project, branch);
+        stage('Build Image') {
+            if(branch == 'master') {
+                container('docker') {
+                    docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
+                        sh """
+                            docker build -t ptcos/kubernetes-image-updater:latest .
+                        """
+                        def image = docker.image("ptcos/kubernetes-image-updater")
+                        image.push("latest")
+                    }
                 }
             }
         }
