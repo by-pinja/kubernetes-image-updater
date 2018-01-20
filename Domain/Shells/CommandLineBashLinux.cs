@@ -1,12 +1,13 @@
 using System;
 using System.Diagnostics;
-using LanguageExt;
+using Optional;
+using Updater.Util;
 
 namespace Updater.Domain
 {
     public class CommandLineBashLinux : ICommandLine
     {
-        public Either<Exception, string> Run(string command)
+        public Option<string, Exception> Run(string command)
         {
             if(command == null)
                 throw new ArgumentNullException(nameof(command));
@@ -30,17 +31,19 @@ namespace Updater.Domain
 
             if (!proc.HasExited)
             {
-                return new InvalidOperationException($"Command '{command}' failed to exit during timeout, likely command hangs.");
+                return $"Command '{command}' failed to exit during timeout, likely command hangs."
+                    .AsInvalidOperation<string>();
             }
 
             var error = proc.StandardError.ReadToEnd();
 
             if (!string.IsNullOrEmpty(error))
-                return new InvalidOperationException($"Failed to run commandline command, error: '{error}'");
+                return $"Failed to run commandline command, error: '{error}'"
+                    .AsInvalidOperation<string>();;
 
             var output = proc.StandardOutput.ReadToEnd();
 
-            return output;
+            return output.Some<string, Exception>();
         }
     }
 }

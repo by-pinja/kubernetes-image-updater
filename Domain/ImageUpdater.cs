@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
@@ -46,32 +47,33 @@ namespace Updater.Domain
         {
             var parsedUri = ImageUriParser.ParseUri(newImageUri);
 
-            var allDeploymentsCmdAsJson = "kubectl get deployments --all-namespaces -o json";
+            _shell.Run("kubectl get deployments --all-namespaces -o json")
+                .Match<IEnumerable<ImageRow>>(
+                    success =>
+                    {
+                        var asJObject = JObject.Parse(success);
+                        return ParseImageRowsFromJsonResponse(asJObject);
+                    }, error => {
+                        _logger.LogError($"Failed to fetch deployment json from kubernetes, error: {error}");
+                        return Enumerable.Empty<ImageRow>();
+                    })
+                .Where(image => ImageUriParser.ParseUri(image.Image).uri == parsedUri.uri)
+                .ToList()
+                .ForEach(image => SetNewImage(parsedUri, image));
+        }
 
-            _shell.Run(allDeploymentsCmdAsJson).Match(
-                success =>
+        private static IEnumerable<ImageRow> ParseImageRowsFromJsonResponse(JObject asJObject)
+        {
+            return asJObject["items"].Children()
+                .Where(item => item["kind"].Value<string>() == "Deployment")
+                .SelectMany(deployment =>
                 {
-                    var asJObject = JObject.Parse(success);
+                    var containers = deployment["spec"]["template"]["spec"]["containers"].Value<JArray>();
 
-                    var images = asJObject["items"].Children()
-                        .Where(item => item["kind"].Value<string>() == "Deployment")
-                        .SelectMany(deployment => {
-                            var containers = deployment["spec"]["template"]["spec"]["containers"].Value<JArray>();
-
-                            return containers
-                                .Select(container => ImageRow.Create(container, deployment));
-                        })
-                        .ToList();
-
-                    images
-                        .Where(image => ImageUriParser.ParseUri(image.Image).uri == parsedUri.uri).ToList()
-                        .ForEach(image =>
-                        {
-                            SetNewImage(parsedUri, image);
-                        });
-                }, error => {
-                    _logger.LogError($"Failed to fetch deployment json from kubernetes, error: {error}");
-                });
+                    return containers
+                        .Select(container => ImageRow.Create(container, deployment));
+                })
+                .ToList();
         }
 
         private void SetNewImage((string uri, string tag) imageUri, ImageRow image) =>

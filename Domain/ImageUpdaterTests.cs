@@ -3,6 +3,7 @@ using System.Linq;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
+using Optional;
 using Updater.Domain.TestData;
 using Updater.Util;
 using Xunit;
@@ -17,9 +18,9 @@ namespace Updater.Domain
             var shell = Substitute.For<ICommandLine>();
             var updater = new ImageUpdater(shell, Substitute.For<ILogger<ImageUpdater>>(), TestUtils.CreateInMemoryContext());
 
-            shell.Run(Arg.Any<string>()).Returns("result");
+            shell.Run(Arg.Any<string>()).Returns("result".Some<string, Exception>());
             shell.Run("kubectl get deployments --all-namespaces -o json")
-                .Returns(TestPathUtil.GetTestDataContent("realdata.json"));
+                .Returns(TestPathUtil.GetTestDataContent("realdata.json").Some<string, Exception>());
 
             updater.UpdateEventHandler("eu.gcr.io/ptcs-docker-registry/authorization:123-master");
 
@@ -32,9 +33,9 @@ namespace Updater.Domain
             var shell = Substitute.For<ICommandLine>();
             var updater = new ImageUpdater(shell, Substitute.For<ILogger<ImageUpdater>>(), TestUtils.CreateInMemoryContext());
 
-            shell.Run(Arg.Any<string>()).Returns("result");
+            shell.Run(Arg.Any<string>()).Returns("result".Some<string, Exception>());
             shell.Run("kubectl get deployments --all-namespaces -o json")
-                .Returns(TestPathUtil.GetTestDataContent("realdata.json"));
+                .Returns(TestPathUtil.GetTestDataContent("realdata.json").Some<string, Exception>());
 
             updater.UpdateEventHandler("eu.gcr.io/ptcs-docker-registry/authorization:123-master");
 
@@ -48,9 +49,9 @@ namespace Updater.Domain
             var db = TestUtils.CreateInMemoryContext();
             var updater = new ImageUpdater(shell, Substitute.For<ILogger<ImageUpdater>>(), db);
 
-            shell.Run(Arg.Any<string>()).Returns("result");
+            shell.Run(Arg.Any<string>()).Returns("result".Some<string, Exception>());
             shell.Run("kubectl get deployments --all-namespaces -o json")
-                .Returns(TestPathUtil.GetTestDataContent("realdata.json"));
+                .Returns(TestPathUtil.GetTestDataContent("realdata.json").Some<string, Exception>());
 
             updater.UpdateEventHandler("eu.gcr.io/ptcs-docker-registry/authorization:123-master");
 
@@ -64,9 +65,9 @@ namespace Updater.Domain
             var logger = Substitute.For<ILogger<ImageUpdater>>();
             var updater = new ImageUpdater(shell, logger, TestUtils.CreateInMemoryContext());
 
-            shell.Run(Arg.Any<string>()).Returns("result");
+            shell.Run(Arg.Any<string>()).Returns("result".Some<string, Exception>());
             shell.Run("kubectl get deployments --all-namespaces -o json")
-                .Returns(new InvalidOperationException());
+                .Returns(Option.None<string, Exception>(new InvalidOperationException()));
 
             updater.UpdateEventHandler("eu.gcr.io/ptcs-docker-registry/authorization:123-master");
 
@@ -82,10 +83,10 @@ namespace Updater.Domain
             var updater = new ImageUpdater(shell, logger, TestUtils.CreateInMemoryContext());
 
             shell.Run("kubectl get deployments --all-namespaces -o json")
-                .Returns(TestPathUtil.GetTestDataContent("realdata.json"));
+                .Returns(TestPathUtil.GetTestDataContent("realdata.json").Some<string, Exception>());
 
             shell.Run(Arg.Is<string>(cmd => cmd.Contains("kubectl set image")))
-                .Returns(new InvalidOperationException());
+                .Returns(Option.None<string, Exception>(new InvalidOperationException()));
 
             updater.UpdateEventHandler("eu.gcr.io/ptcs-docker-registry/authorization:123-master");
             logger.CheckErrorMessage();

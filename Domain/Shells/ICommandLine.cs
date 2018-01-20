@@ -1,10 +1,10 @@
 using System;
-using LanguageExt;
+using Optional;
 
 namespace Updater.Domain
 {
     public interface ICommandLine
     {
-        Either<Exception, string> Run(string command);
+        Option<string, Exception> Run(string command);
     }
 }
