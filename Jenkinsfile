@@ -19,7 +19,7 @@ podTemplate(label: 'kubernetes-image-updater',
         stage('Build') {
             container('dotnet') {
                 sh """
-                    dotnet build
+                    dotnet publish -c release -o out
                 """
             }
         }
