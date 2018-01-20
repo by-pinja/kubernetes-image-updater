@@ -9,11 +9,13 @@ namespace Updater.Domain
     {
         private readonly ICommandLine _shell;
         private readonly Microsoft.Extensions.Logging.ILogger<ImageUpdater> _logger;
+        private readonly UpdaterDbContext _context;
 
-        public ImageUpdater(ICommandLine shell, ILogger<ImageUpdater> logger)
+        public ImageUpdater(ICommandLine shell, ILogger<ImageUpdater> logger, UpdaterDbContext context)
         {
             _shell = shell;
             _logger = logger;
+            _context = context;
         }
 
         private class ImageRow
@@ -65,17 +67,27 @@ namespace Updater.Domain
                         .Where(image => ImageUriParser.ParseUri(image.Image).uri == parsedUri.uri).ToList()
                         .ForEach(image =>
                         {
-                            SetNewImage(newImageUri, image);
+                            SetNewImage(parsedUri, image);
                         });
                 }, error => {
                     _logger.LogError($"Failed to fetch deployment json from kubernetes, error: {error}");
                 });
         }
 
-        private void SetNewImage(string imageUri, ImageRow image) =>
-            _shell.Run($"kubectl set image deployment/{image.DeploymentName} {image.ContainerName}={imageUri} --namespace={image.NameSpace}")
+        private void SetNewImage((string uri, string tag) imageUri, ImageRow image) =>
+            _shell.Run($"kubectl set image deployment/{image.DeploymentName} {image.ContainerName}={imageUri.uri}:{imageUri.tag} --namespace={image.NameSpace}")
                 .Match(
-                    output =>  _logger.LogInformation($"Updated image, output: {output}"),
+                    output =>
+                    {
+                        _context.EventHistory.Add(new ImageEvent()
+                        {
+                            Image = imageUri.uri,
+                            Tag = imageUri.tag,
+                            Stamp = DateTime.UtcNow
+                        });
+                        _context.SaveChanges();
+                        _logger.LogInformation($"Updated image, output: {output}");
+                    },
                     error => _logger.LogError(error.ToString()));
     }
 }
