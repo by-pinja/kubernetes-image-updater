@@ -2,6 +2,7 @@ using System;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Updater.Domain.TestData;
+using Updater.Util;
 using Xunit;
 
 namespace Updater.Domain
@@ -14,6 +15,7 @@ namespace Updater.Domain
             var shell = Substitute.For<ICommandLine>();
             var updater = new ImageUpdater(shell, Substitute.For<ILogger<ImageUpdater>>());
 
+            shell.Run(Arg.Any<string>()).Returns("result");
             shell.Run("kubectl get deployments --all-namespaces -o json")
                 .Returns(TestPathUtil.GetTestDataContent("realdata.json"));
 
@@ -28,6 +30,7 @@ namespace Updater.Domain
             var shell = Substitute.For<ICommandLine>();
             var updater = new ImageUpdater(shell, Substitute.For<ILogger<ImageUpdater>>());
 
+            shell.Run(Arg.Any<string>()).Returns("result");
             shell.Run("kubectl get deployments --all-namespaces -o json")
                 .Returns(TestPathUtil.GetTestDataContent("realdata.json"));
 
@@ -43,13 +46,14 @@ namespace Updater.Domain
             var logger = Substitute.For<ILogger<ImageUpdater>>();
             var updater = new ImageUpdater(shell, logger);
 
+            shell.Run(Arg.Any<string>()).Returns("result");
             shell.Run("kubectl get deployments --all-namespaces -o json")
                 .Returns(new InvalidOperationException());
 
             updater.UpdateEventHandler("eu.gcr.io/ptcs-docker-registry/authorization:123-master");
 
             shell.DidNotReceive().Run(Arg.Is<string>(cmd => cmd.Contains("kubectl set image")));
-            logger.Received(1).LogError(Arg.Any<string>());
+            logger.CheckErrorMessage();
         }
 
         [Fact]
@@ -66,8 +70,7 @@ namespace Updater.Domain
                 .Returns(new InvalidOperationException());
 
             updater.UpdateEventHandler("eu.gcr.io/ptcs-docker-registry/authorization:123-master");
-
-            logger.Received(1).LogError(Arg.Any<string>());
+            logger.CheckErrorMessage();
         }
     }
 }

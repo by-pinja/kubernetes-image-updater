@@ -40,9 +40,9 @@ namespace Updater.Domain
             }
         }
 
-        public void UpdateEventHandler(string imageUri)
+        public void UpdateEventHandler(string newImageUri)
         {
-            var parsedUri = ImageUriParser.ParseUri(imageUri);
+            var parsedUri = ImageUriParser.ParseUri(newImageUri);
 
             var allDeploymentsCmdAsJson = "kubectl get deployments --all-namespaces -o json";
 
@@ -65,11 +65,17 @@ namespace Updater.Domain
                         .Where(image => ImageUriParser.ParseUri(image.Image).uri == parsedUri.uri).ToList()
                         .ForEach(image =>
                         {
-                            _shell.Run($"kubectl set image deployment/{image.DeploymentName} {image.ContainerName}={imageUri} --namespace={image.NameSpace}");
+                            SetNewImage(newImageUri, image);
                         });
                 }, error => {
                     _logger.LogError($"Failed to fetch deployment json from kubernetes, error: {error}");
                 });
         }
+
+        private void SetNewImage(string imageUri, ImageRow image) =>
+            _shell.Run($"kubectl set image deployment/{image.DeploymentName} {image.ContainerName}={imageUri} --namespace={image.NameSpace}")
+                .Match(
+                    output =>  _logger.LogInformation($"Updated image, output: {output}"),
+                    error => _logger.LogError(error.ToString()));
     }
 }
