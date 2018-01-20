@@ -31,12 +31,13 @@ podTemplate(label: 'kubernetes-image-updater',
             }
         }
         stage('Build Image') {
+            sh """
+                docker build -t ptcos/kubernetes-image-updater:latest .
+            """
+
             if(branch == 'master') {
                 container('docker') {
                     docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
-                        sh """
-                            docker build -t ptcos/kubernetes-image-updater:latest .
-                        """
                         def image = docker.image("ptcos/kubernetes-image-updater")
                         image.push("latest")
                     }
