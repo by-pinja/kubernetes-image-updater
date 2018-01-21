@@ -27,7 +27,7 @@ namespace Updater.Domain
             };
 
             proc.Start();
-            proc.WaitForExit(5000);
+            proc.WaitForExit(30*1000);
 
             if (!proc.HasExited)
             {

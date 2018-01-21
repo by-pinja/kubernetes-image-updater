@@ -21,8 +21,8 @@ namespace Updater.Controllers
         [Authorize(AuthenticationSchemes = "ApiKey")]
         public IActionResult UpdateImages([FromBody] UpdateRequest request)
         {
-            Task.Run(() => _updater.UpdateEventHandler(request.GetFullImageUri()));
-            return StatusCode(201);
+            _updater.UpdateEventHandler(request.GetFullImageUri());
+            return Ok();
         }
 
         [HttpGet("/api/history/{imageName}")]

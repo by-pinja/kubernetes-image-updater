@@ -88,7 +88,7 @@ namespace Updater.Domain
                             Stamp = DateTime.UtcNow
                         });
                         _context.SaveChanges();
-                        _logger.LogInformation($"Updated image, output: {output}");
+                        _logger.LogInformation($"Updated image 'deployment/{image.DeploymentName} {image.ContainerName}={imageUri.uri}:{imageUri.tag} --namespace={image.NameSpace}', output: {output}");
                     },
                     error => _logger.LogError(error.ToString()));
     }
