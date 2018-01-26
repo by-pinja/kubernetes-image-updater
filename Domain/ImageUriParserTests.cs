@@ -1,3 +1,4 @@
+using System;
 using FluentAssertions;
 using Xunit;
 
@@ -48,6 +49,13 @@ namespace Updater.Domain
                 .Equals(ImageUriParser.ParseUri("image:someothertag"))
                 .Should()
                 .Be(false);
+        }
+
+        [Fact]
+        public void WhenParsesInvalidFormatOfUri_ThenThrowError()
+        {
+            Action test = () => ImageUriParser.ParseUri(":sometag");
+            test.ShouldThrow<ArgumentException>();
         }
     }
 }

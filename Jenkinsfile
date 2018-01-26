@@ -36,10 +36,11 @@ podTemplate(label: 'kubernetes-image-updater',
                     docker build -t ptcos/kubernetes-image-updater:latest .
                 """
 
-                if(branch == 'master') {
+                if(branch == 'master' && env.GIT_TAG_NAME && env.GIT_TAG_NAME != "null") {
                     docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
                         def image = docker.image("ptcos/kubernetes-image-updater")
                         image.push("latest")
+                        image.push(env.GIT_TAG_NAME)
                     }
                 }
             }
