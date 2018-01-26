@@ -15,7 +15,7 @@ namespace Updater.Domain
                 throw new ArgumentNullException (nameof (command));
 
             // Important to notice: this is workaround...
-            // When cmd returns large json, there is probably some control characters or something in stream
+            // When cmd returns large json from kubectl, there is probably some control characters or something in stream
             // basically without this any larger JSON response locks terminal and nothing will get ever returned.
             // Which of course causes timeout error after some waiting.
             var tempFileLocation = GetTempFilePath();
@@ -53,10 +53,10 @@ namespace Updater.Domain
             return output.Some<string, Exception> ();
         }
 
-        public static string GetTempFilePath ()
+        private static string GetTempFilePath ()
         {
             var path = Path.GetTempPath ();
-            var fileName = Guid.NewGuid ().ToString () + ".json";
+            var fileName = Guid.NewGuid ().ToString () + ".out";
             return Path.Combine (path, fileName);
         }
     }

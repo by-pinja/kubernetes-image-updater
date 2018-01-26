@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.IO;
 using Optional;
 using Updater.Util;
 
@@ -12,10 +13,16 @@ namespace Updater.Domain
             if(command == null)
                 throw new ArgumentNullException(nameof(command));
 
+            // Important to notice: this is workaround...
+            // When cmd returns large json from kubectl, there is probably some control characters or something in stream
+            // basically without this any larger JSON response locks terminal and nothing will get ever returned.
+            // Which of course causes timeout error after some waiting.
+            var tempFileLocation = GetTempFilePath();
+
             var psi = new ProcessStartInfo
             {
                 FileName = "/bin/bash",
-                Arguments = $"-c \"{command.Replace("\"", "\\\"")}\"",
+                Arguments = $"-c \"{command.Replace("\"", "\\\"")} > {tempFileLocation}\"",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true
@@ -41,9 +48,17 @@ namespace Updater.Domain
                 return $"Failed to run commandline command, error: '{error}'"
                     .AsInvalidOperation<string>();;
 
-            var output = proc.StandardOutput.ReadToEnd();
+            var output = File.ReadAllText(tempFileLocation);
+            File.Delete(tempFileLocation);
 
             return output.Some<string, Exception>();
+        }
+
+        private static string GetTempFilePath ()
+        {
+            var path = Path.GetTempPath ();
+            var fileName = Guid.NewGuid ().ToString () + ".out";
+            return Path.Combine (path, fileName);
         }
     }
 }
