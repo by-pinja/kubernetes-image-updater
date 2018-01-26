@@ -40,6 +40,7 @@ podTemplate(label: 'kubernetes-image-updater',
                     docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
                         def image = docker.image("ptcos/kubernetes-image-updater")
                         image.push("latest")
+                        image.push(env.GIT_TAG_NAME)
                     }
                 }
             }
