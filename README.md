@@ -12,7 +12,7 @@ However this raises many issues:
 ## How it works
 When event about updated image arrives, scan current cluster through for matching images and if any is found, then update image to current version.
 
-In production use we strongly recommended by using service with google service account instead of personal accounts ...
+On real installations we strongly recommended by using service with google service account instead of personal accounts ...
 
 Service gives http callback apis which is easy to integrate most systems via hooks. Theres also possibility to integrate this directly GCR registry with pub events and functions, however we don't use them so there are no 'ready to use' example available.
 
