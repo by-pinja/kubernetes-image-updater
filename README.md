@@ -1,5 +1,5 @@
 [![Docker pulls](https://img.shields.io/docker/pulls/ptcos/kubernetes-image-updater.svg)](https://hub.docker.com/r/ptcos/kubernetes-image-updater/)
-
+[![Build Status](https://jenkins.protacon.cloud/buildStatus/icon?job=www.github.com/kubernetes-image-updater/master&build=6)](https://jenkins.protacon.cloud/job/www.github.com/job/kubernetes-image-updater/job/master/6/)
 # kubernetes-image-updater
 When CI finishes build of new container, test environment(s) should update automatically. However there isn't out of box support for this kind of feature in either kubernetes or any common registery. It's common to update test environments directly from build scripts with command like `kubectl set image deployment/image-$branch image-$branch=$published.image:$published.tag --namespace=something`.
 
