@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -19,7 +20,7 @@ namespace Updater.Controllers
 
         [HttpPost("/api/update")]
         [Authorize(AuthenticationSchemes = "ApiKey")]
-        public IActionResult UpdateImages([FromBody] UpdateRequest request)
+        public IActionResult UpdateImages([Required][FromBody] UpdateRequest request)
         {
             _updater.UpdateEventHandler(request.GetFullImageUri());
             return Ok();

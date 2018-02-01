@@ -14,6 +14,7 @@
     <PackageReference Include="Protacon.NetCore.WebApi.ApiKeyAuth" Version="2.0.2" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="1.1.0" />
     <PackageReference Include="Optional" Version="4.0.0-rc" />
+    <PackageReference Include="Protacon.NetCore.WebApi.Util" Version="0.0.3" />
   </ItemGroup>
   <ItemGroup>
     <DotNetCliToolReference Include="Microsoft.DotNet.Watcher.Tools" Version="2.0.0" />
