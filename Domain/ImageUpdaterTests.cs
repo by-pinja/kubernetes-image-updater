@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NSubstitute;
 using Optional;
 using Updater.Domain.TestData;
@@ -16,7 +17,7 @@ namespace Updater.Domain
         public void WhenValidJsonIsRespondedFromCtl_ThenInvokeUpdateCommandsCorretly()
         {
             var shell = Substitute.For<ICommandLine>();
-            var updater = new ImageUpdater(shell, Substitute.For<ILogger<ImageUpdater>>(), TestUtils.CreateInMemoryContext());
+            var updater = new ImageUpdater(shell, Substitute.For<ILogger<ImageUpdater>>(), TestUtils.CreateInMemoryContext(), TestUtils.GetAppSettings());
 
             shell.Run(Arg.Any<string>()).Returns("result".Some<string, Exception>());
             shell.Run("kubectl get deployments --all-namespaces -o json")
@@ -28,10 +29,25 @@ namespace Updater.Domain
         }
 
         [Fact]
+        public void WhenTagFilteringIsSet_ThenDontUpdateNonMatchingImages()
+        {
+            var shell = Substitute.For<ICommandLine>();
+            var updater = new ImageUpdater(shell, Substitute.For<ILogger<ImageUpdater>>(), TestUtils.CreateInMemoryContext(), TestUtils.GetAppSettings(".*this_is_not_match.*"));
+
+            shell.Run(Arg.Any<string>()).Returns("result".Some<string, Exception>());
+            shell.Run("kubectl get deployments --all-namespaces -o json")
+                .Returns(TestPathUtil.GetTestDataContent("realdata.json").Some<string, Exception>());
+
+            updater.UpdateEventHandler("eu.gcr.io/ptcs-docker-registry/authorization:123-master");
+
+            shell.DidNotReceive().Run(Arg.Is<string>(x => x.Contains("kubectl set image")));
+        }
+
+        [Fact]
         public void WhenValidJsonIsRespondedFromCtl_ThenOnlyUpdateMatchingDeployments()
         {
             var shell = Substitute.For<ICommandLine>();
-            var updater = new ImageUpdater(shell, Substitute.For<ILogger<ImageUpdater>>(), TestUtils.CreateInMemoryContext());
+            var updater = new ImageUpdater(shell, Substitute.For<ILogger<ImageUpdater>>(), TestUtils.CreateInMemoryContext(), TestUtils.GetAppSettings());
 
             shell.Run(Arg.Any<string>()).Returns("result".Some<string, Exception>());
             shell.Run("kubectl get deployments --all-namespaces -o json")
@@ -47,7 +63,7 @@ namespace Updater.Domain
         {
             var shell = Substitute.For<ICommandLine>();
             var db = TestUtils.CreateInMemoryContext();
-            var updater = new ImageUpdater(shell, Substitute.For<ILogger<ImageUpdater>>(), db);
+            var updater = new ImageUpdater(shell, Substitute.For<ILogger<ImageUpdater>>(), db, TestUtils.GetAppSettings());
 
             shell.Run(Arg.Any<string>()).Returns("result".Some<string, Exception>());
             shell.Run("kubectl get deployments --all-namespaces -o json")
@@ -63,7 +79,7 @@ namespace Updater.Domain
         {
             var shell = Substitute.For<ICommandLine>();
             var logger = Substitute.For<ILogger<ImageUpdater>>();
-            var updater = new ImageUpdater(shell, logger, TestUtils.CreateInMemoryContext());
+            var updater = new ImageUpdater(shell, logger, TestUtils.CreateInMemoryContext(), TestUtils.GetAppSettings());
 
             shell.Run(Arg.Any<string>()).Returns("result".Some<string, Exception>());
             shell.Run("kubectl get deployments --all-namespaces -o json")
@@ -80,7 +96,7 @@ namespace Updater.Domain
         {
             var shell = Substitute.For<ICommandLine>();
             var logger = Substitute.For<ILogger<ImageUpdater>>();
-            var updater = new ImageUpdater(shell, logger, TestUtils.CreateInMemoryContext());
+            var updater = new ImageUpdater(shell, logger, TestUtils.CreateInMemoryContext(), TestUtils.GetAppSettings());
 
             shell.Run("kubectl get deployments --all-namespaces -o json")
                 .Returns(TestPathUtil.GetTestDataContent("realdata.json").Some<string, Exception>());
@@ -91,5 +107,6 @@ namespace Updater.Domain
             updater.UpdateEventHandler("eu.gcr.io/ptcs-docker-registry/authorization:123-master");
             logger.CheckErrorMessage();
         }
+
     }
 }

@@ -28,6 +28,8 @@ namespace Updater
         {
             services.AddDbContext<UpdaterDbContext>(options => options.UseInMemoryDatabase(databaseName: "db"));
             services.AddTransient<ImageUpdater>();
+            services.Configure<AppSettings>(Configuration);
+
             services.AddMvc(options =>
             {
                 options.Filters.Add(new ValidateModelAttribute());

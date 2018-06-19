@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 
 namespace Updater.Domain
@@ -11,12 +13,14 @@ namespace Updater.Domain
         private readonly ICommandLine _shell;
         private readonly Microsoft.Extensions.Logging.ILogger<ImageUpdater> _logger;
         private readonly UpdaterDbContext _context;
+        private readonly Regex _tagFilter;
 
-        public ImageUpdater(ICommandLine shell, ILogger<ImageUpdater> logger, UpdaterDbContext context)
+        public ImageUpdater(ICommandLine shell, ILogger<ImageUpdater> logger, UpdaterDbContext context, IOptions<AppSettings> settings)
         {
             _shell = shell;
             _logger = logger;
             _context = context;
+            _tagFilter = new Regex(settings.Value.UpdateTagsMatching);
         }
 
         private class ImageRow
@@ -57,7 +61,8 @@ namespace Updater.Domain
                         _logger.LogError($"Failed to fetch deployment json from kubernetes, error: {error}");
                         return Enumerable.Empty<ImageRow>();
                     })
-                .Where(image => ImageUriParser.ParseUri(image.Image).uri == parsedUri.uri)
+                .Where(currentClusterImage => _tagFilter.IsMatch(ImageUriParser.ParseUri(currentClusterImage.Image).tag))
+                .Where(currentClusterImage => ImageUriParser.ParseUri(currentClusterImage.Image).uri == parsedUri.uri)
                 .ToList()
                 .ForEach(image => SetNewImage(parsedUri, image));
         }
