@@ -55,7 +55,7 @@ namespace Updater.Domain
         public void WhenParsesInvalidFormatOfUri_ThenThrowError()
         {
             Action test = () => ImageUriParser.ParseUri(":sometag");
-            test.ShouldThrow<ArgumentException>();
+            test.Should().Throw<ArgumentException>();
         }
     }
 }
