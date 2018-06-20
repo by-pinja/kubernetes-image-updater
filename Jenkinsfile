@@ -27,6 +27,8 @@ podTemplate(label: pod.label,
             }
         }
         stage('Build Image') {
+            env.TAG_NAME = "test"
+            env.BRANCH_NAME  = "test"
             publishTagToDockerhub("kubernetes-image-updater")
         }
     }
