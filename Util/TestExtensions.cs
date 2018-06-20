@@ -1,6 +1,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NSubstitute;
 using Updater.Domain;
 
@@ -16,6 +17,11 @@ namespace Updater.Util
                 Arg.Any<object>(),
                 null,
                 Arg.Any<Func<object, Exception, string>>());
+        }
+
+        public static IOptions<AppSettings> GetAppSettings(string imageTagValidator = ".*")
+        {
+            return Options.Create(new AppSettings() { UpdateTagsMatching = imageTagValidator });
         }
 
         public static UpdaterDbContext CreateInMemoryContext()
