@@ -1,4 +1,4 @@
-library 'jenkins-ptcs-library@0.2.1'
+library 'jenkins-ptcs-library@feature/dockerhub-publish'
 
 // Podtemplate and node must match, dont use generic names like 'node', use more specific like projectname or node + excact version number.
 // This is because CI environment reuses templates based on naming, if you create node 7 environment with name 'node', following node 8 environment
@@ -27,19 +27,7 @@ podTemplate(label: pod.label,
             }
         }
         stage('Build Image') {
-            container('docker') {
-                sh """
-                    docker build -t ptcos/kubernetes-image-updater:latest .
-                """
-
-                if(env.TAG_NAME && env.TAG_NAME != "null" && env.TAG_NAME == env.BRANCH) {
-                    docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
-                        def image = docker.image("ptcos/kubernetes-image-updater")
-                        image.push("latest")
-                        image.push(env.GIT_TAG_NAME)
-                    }
-                }
-            }
+            publishTagToDockerhub("kubernetes-image-updater")
         }
     }
   }
