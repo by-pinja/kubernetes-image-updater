@@ -17,7 +17,7 @@ namespace Updater.Domain
         public void WhenValidJsonIsRespondedFromCtl_ThenInvokeUpdateCommandsCorretly()
         {
             var shell = Substitute.For<ICommandLine>();
-            var updater = new ImageUpdater(shell, Substitute.For<ILogger<ImageUpdater>>(), TestUtils.CreateInMemoryContext(), TestUtils.GetAppSettings());
+            var updater = new ImageUpdater(shell, Substitute.For<ILogger<ImageUpdater>>(), TestUtils.CreateInMemoryContext(), TestUtils.GetAppSettings(".*master.*"));
 
             shell.Run(Arg.Any<string>()).Returns("result".Some<string, Exception>());
             shell.Run("kubectl get deployments --all-namespaces -o json")
