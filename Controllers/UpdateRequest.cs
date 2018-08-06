@@ -6,6 +6,7 @@ namespace Updater.Controllers
     {
         [Required]
         public string ImageName { get; set; }
+
         [Required]
         public string Tag { get; set; }
 

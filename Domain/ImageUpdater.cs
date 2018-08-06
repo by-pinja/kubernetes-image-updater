@@ -57,12 +57,13 @@ namespace Updater.Domain
                     {
                         var asJObject = JObject.Parse(success);
                         return ParseImageRowsFromJsonResponse(asJObject);
-                    }, error => {
+                    }, error =>
+                    {
                         _logger.LogError($"Failed to fetch deployment json from kubernetes, error: {error}");
                         return Enumerable.Empty<ImageRow>();
                     })
-                .Where(currentClusterImage => _tagFilter.IsMatch(ImageUriParser.ParseUri(currentClusterImage.Image).tag))
-                .Where(currentClusterImage => ImageUriParser.ParseUri(currentClusterImage.Image).uri == parsedUri.uri)
+                .Where(currentClusterImage => _tagFilter.IsMatch(ImageUriParser.ParseUri(currentClusterImage.Image).tag)
+                    && ImageUriParser.ParseUri(currentClusterImage.Image).uri == parsedUri.uri)
                 .ToList()
                 .ForEach(image => SetNewImage(parsedUri, image));
         }

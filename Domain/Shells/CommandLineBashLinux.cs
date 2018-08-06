@@ -45,8 +45,7 @@ namespace Updater.Domain
             var error = proc.StandardError.ReadToEnd();
 
             if (!string.IsNullOrEmpty(error))
-                return $"Failed to run commandline command, error: '{error}'"
-                    .AsInvalidOperation<string>();;
+                return $"Failed to run commandline command, error: '{error}§'".AsInvalidOperation<string>();
 
             var output = File.ReadAllText(tempFileLocation);
             File.Delete(tempFileLocation);
