@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
@@ -20,10 +21,9 @@ namespace Updater.Controllers
 
         [HttpPost("/api/update")]
         [Authorize(AuthenticationSchemes = "ApiKey")]
-        public IActionResult UpdateImages([Required][FromBody] UpdateRequest request)
+        public ActionResult<IEnumerable<ImageEvent>> UpdateImages([Required][FromBody] UpdateRequest request)
         {
-            _updater.UpdateEventHandler(request.GetFullImageUri());
-            return Ok();
+            return Ok(_updater.UpdateEventHandler(request.GetFullImageUri()));
         }
 
         [HttpGet("/api/history/{imageName}")]
@@ -36,12 +36,12 @@ namespace Updater.Controllers
         }
 
         [HttpGet("/api/history/{imageName}/current")]
-        public IActionResult UpdateImages(string imageName)
+        public IActionResult GetLatestUpdate(string imageName)
         {
             return Ok(_context.EventHistory
                 .Where(x => x.Image == imageName)
-                .Take(1)
                 .OrderByDescending(x => x.Stamp)
+                .Take(1)
                 .ToList());
         }
     }
