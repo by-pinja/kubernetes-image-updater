@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-library 'jenkins-ptcs-library@0.2.1'
-=======
-library 'jenkins-ptcs-library@0.2.2'
->>>>>>> master
+library 'jenkins-ptcs-library@0.2.3'
 
 // Podtemplate and node must match, dont use generic names like 'node', use more specific like projectname or node + excact version number.
 // This is because CI environment reuses templates based on naming, if you create node 7 environment with name 'node', following node 8 environment
@@ -31,11 +27,7 @@ podTemplate(label: pod.label,
             }
         }
         stage('Build Image') {
-<<<<<<< HEAD
-            publishTagToDockerhub("kubernetes-image-updater");
-=======
             publishTagToDockerhub("kubernetes-image-updater")
->>>>>>> master
         }
     }
   }
