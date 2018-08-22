@@ -27,19 +27,7 @@ podTemplate(label: pod.label,
             }
         }
         stage('Build Image') {
-            container('docker') {
-                sh """
-                    docker build -t ptcos/kubernetes-image-updater:latest .
-                """
-
-                if(env.TAG_NAME && env.TAG_NAME != "null" && env.TAG_NAME == env.BRANCH) {
-                    docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
-                        def image = docker.image("ptcos/kubernetes-image-updater")
-                        image.push("latest")
-                        image.push(env.GIT_TAG_NAME)
-                    }
-                }
-            }
+            publishTagToDockerhub("kubernetes-image-updater");
         }
     }
   }
