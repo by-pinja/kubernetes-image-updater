@@ -30,7 +30,14 @@ namespace Updater
             services.AddTransient<ImageUpdater>();
             services.Configure<AppSettings>(Configuration);
 
+<<<<<<< HEAD
             services.AddMvc(options => options.Filters.Add(new ValidateModelAttribute()));
+=======
+            services.AddMvc(options =>
+            {
+                options.Filters.Add(new ValidateModelAttribute());
+            });
+>>>>>>> master
 
             bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 

@@ -108,5 +108,6 @@ namespace Updater.Domain
             updater.UpdateEventHandler("eu.gcr.io/ptcs-docker-registry/authorization:123-master");
             logger.CheckErrorMessage();
         }
+
     }
 }
