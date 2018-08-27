@@ -17,7 +17,7 @@ namespace Updater
 {
     public class Startup
     {
-        public IConfiguration Configuration { get; private set; }
+        public IConfiguration Configuration { get; }
 
         public Startup(IConfiguration config)
         {
@@ -30,10 +30,7 @@ namespace Updater
             services.AddTransient<ImageUpdater>();
             services.Configure<AppSettings>(Configuration);
 
-            services.AddMvc(options =>
-            {
-                options.Filters.Add(new ValidateModelAttribute());
-            });
+            services.AddMvc(options => options.Filters.Add(new ValidateModelAttribute()));
 
             bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
@@ -73,7 +70,7 @@ namespace Updater
             });
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app)
         {
             app.UseAuthentication();
 

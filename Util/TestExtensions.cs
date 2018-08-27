@@ -33,5 +33,4 @@ namespace Updater.Util
                 return new UpdaterDbContext(options);
         }
     }
-
 }

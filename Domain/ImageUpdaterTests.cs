@@ -53,9 +53,10 @@ namespace Updater.Domain
             shell.Run("kubectl get deployments --all-namespaces -o json")
                 .Returns(TestPathUtil.GetTestDataContent("realdata.json").Some<string, Exception>());
 
-            updater.UpdateEventHandler("eu.gcr.io/ptcs-docker-registry/authorization:123-master");
+            var result = updater.UpdateEventHandler("eu.gcr.io/ptcs-docker-registry/authorization:123-master");
 
             shell.Received(1).Run(Arg.Is<string>(cmd => cmd.Contains("kubectl set image")));
+            result.Should().Contain(x => x.Image == "eu.gcr.io/ptcs-docker-registry/authorization");
         }
 
         [Fact]
@@ -107,6 +108,5 @@ namespace Updater.Domain
             updater.UpdateEventHandler("eu.gcr.io/ptcs-docker-registry/authorization:123-master");
             logger.CheckErrorMessage();
         }
-
     }
 }

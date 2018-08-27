@@ -47,24 +47,31 @@ namespace Updater.Domain
             }
         }
 
-        public void UpdateEventHandler(string newImageUri)
+        public IEnumerable<ImageEvent> UpdateEventHandler(string newImageUri)
         {
             var parsedUri = ImageUriParser.ParseUri(newImageUri);
 
-            _shell.Run("kubectl get deployments --all-namespaces -o json")
+            return _shell.Run("kubectl get deployments --all-namespaces -o json")
                 .Match<IEnumerable<ImageRow>>(
                     success =>
                     {
                         var asJObject = JObject.Parse(success);
                         return ParseImageRowsFromJsonResponse(asJObject);
-                    }, error => {
+                    }, error =>
+                    {
                         _logger.LogError($"Failed to fetch deployment json from kubernetes, error: {error}");
                         return Enumerable.Empty<ImageRow>();
                     })
-                .Where(currentClusterImage => _tagFilter.IsMatch(ImageUriParser.ParseUri(currentClusterImage.Image).tag))
-                .Where(currentClusterImage => ImageUriParser.ParseUri(currentClusterImage.Image).uri == parsedUri.uri)
-                .ToList()
-                .ForEach(image => SetNewImage(parsedUri, image));
+                .Where(currentClusterImage => CheckIfImageIsApplicapleForDeployment(currentClusterImage, parsedUri))
+                .Select(image => SetNewImage(parsedUri, image))
+                .ToList();
+        }
+
+        private bool CheckIfImageIsApplicapleForDeployment(ImageRow currentClusterImage, (string uri, string tag) parsedUri)
+        {
+            var isApplicaple = _tagFilter.IsMatch(ImageUriParser.ParseUri(currentClusterImage.Image).tag) && ImageUriParser.ParseUri(currentClusterImage.Image).uri == parsedUri.uri;
+            _logger.LogDebug($"Checked {ImageUriParser.ParseUri(currentClusterImage.Image)} against {parsedUri} and {nameof(isApplicaple)} returned {isApplicaple}");
+            return isApplicaple;
         }
 
         private static IEnumerable<ImageRow> ParseImageRowsFromJsonResponse(JObject asJObject)
@@ -81,20 +88,30 @@ namespace Updater.Domain
                 .ToList();
         }
 
-        private void SetNewImage((string uri, string tag) imageUri, ImageRow image) =>
-            _shell.Run($"kubectl set image deployment/{image.DeploymentName} {image.ContainerName}={imageUri.uri}:{imageUri.tag} --namespace={image.NameSpace}")
-                .Match(
+        private ImageEvent SetNewImage((string uri, string tag) imageUri, ImageRow image)
+        {
+            return _shell.Run($"kubectl set image deployment/{image.DeploymentName} {image.ContainerName}={imageUri.uri}:{imageUri.tag} --namespace={image.NameSpace}")
+                .Match<ImageEvent>(
                     output =>
                     {
-                        _context.EventHistory.Add(new ImageEvent()
+                        var entity = _context.EventHistory.Add(new ImageEvent()
                         {
                             Image = imageUri.uri,
                             Tag = imageUri.tag,
                             Stamp = DateTime.UtcNow
-                        });
+                        }).Entity;
+
                         _context.SaveChanges();
+
                         _logger.LogInformation($"Updated image 'deployment/{image.DeploymentName} {image.ContainerName}={imageUri.uri}:{imageUri.tag} --namespace={image.NameSpace}', output: {output}");
+
+                        return entity;
                     },
-                    error => _logger.LogError(error.ToString()));
+                    error =>
+                    {
+                        _logger.LogError(error.ToString());
+                        return null;
+                    });
+        }
     }
 }

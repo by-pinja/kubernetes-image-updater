@@ -2,7 +2,7 @@ using System;
 
 namespace Updater.Domain
 {
-    public class ImageUriParser
+    public static class ImageUriParser
     {
         public static (string uri, string tag) ParseUri(string imageUri)
         {
