@@ -8,7 +8,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Updater.Domain
 {
-    public class ImageUpdater
+    public partial class ImageUpdater
     {
         private readonly ICommandLine _shell;
         private readonly Microsoft.Extensions.Logging.ILogger<ImageUpdater> _logger;
@@ -23,36 +23,12 @@ namespace Updater.Domain
             _tagFilter = new Regex(settings.Value.UpdateTagsMatching);
         }
 
-        private class ImageRow
-        {
-            private ImageRow() {}
-            public string Image { get; private set; }
-            public string ContainerName { get; private set; }
-            public string DeploymentName { get; private set; }
-            public string NameSpace { get; private set; }
-
-            public static ImageRow Create(JToken container, JToken deployment)
-            {
-                return new ImageRow
-                {
-                    Image = container["image"].Value<string>() ??
-                        throw new InvalidOperationException($"Missing containers->image"),
-                    ContainerName = container["name"].Value<string>() ??
-                        throw new InvalidOperationException($"Missing containers->name"),
-                    DeploymentName = deployment["metadata"]["name"].Value<string>() ??
-                        throw new InvalidOperationException($"Missing metadata->name"),
-                    NameSpace = deployment["metadata"]["namespace"].Value<string>() ??
-                        throw new InvalidOperationException($"Missing metadata->namespace")
-                };
-            }
-        }
-
         public IEnumerable<ImageEvent> UpdateEventHandler(string newImageUri)
         {
             var parsedUri = ImageUriParser.ParseUri(newImageUri);
 
             return _shell.Run("kubectl get deployments --all-namespaces -o json")
-                .Match<IEnumerable<ImageRow>>(
+                .Match<IEnumerable<ImageInCluster>>(
                     success =>
                     {
                         var asJObject = JObject.Parse(success);
@@ -60,21 +36,21 @@ namespace Updater.Domain
                     }, error =>
                     {
                         _logger.LogError($"Failed to fetch deployment json from kubernetes, error: {error}");
-                        return Enumerable.Empty<ImageRow>();
+                        return Enumerable.Empty<ImageInCluster>();
                     })
                 .Where(currentClusterImage => CheckIfImageIsApplicapleForDeployment(currentClusterImage, parsedUri))
                 .Select(image => SetNewImage(parsedUri, image))
                 .ToList();
         }
 
-        private bool CheckIfImageIsApplicapleForDeployment(ImageRow currentClusterImage, (string uri, string tag) parsedUri)
+        private bool CheckIfImageIsApplicapleForDeployment(ImageInCluster currentClusterImage, (string uri, string tag) parsedUri)
         {
             var isApplicaple = _tagFilter.IsMatch(ImageUriParser.ParseUri(currentClusterImage.Image).tag) && ImageUriParser.ParseUri(currentClusterImage.Image).uri == parsedUri.uri;
             _logger.LogDebug($"Checked {ImageUriParser.ParseUri(currentClusterImage.Image)} against {parsedUri} and {nameof(isApplicaple)} returned {isApplicaple}");
             return isApplicaple;
         }
 
-        private static IEnumerable<ImageRow> ParseImageRowsFromJsonResponse(JObject asJObject)
+        private static IEnumerable<ImageInCluster> ParseImageRowsFromJsonResponse(JObject asJObject)
         {
             return asJObject["items"].Children()
                 .Where(item => item["kind"].Value<string>() == "Deployment")
@@ -83,12 +59,12 @@ namespace Updater.Domain
                     var containers = deployment["spec"]["template"]["spec"]["containers"].Value<JArray>();
 
                     return containers
-                        .Select(container => ImageRow.Create(container, deployment));
+                        .Select(container => ImageInCluster.Create(container, deployment));
                 })
                 .ToList();
         }
 
-        private ImageEvent SetNewImage((string uri, string tag) imageUri, ImageRow image)
+        private ImageEvent SetNewImage((string uri, string tag) imageUri, ImageInCluster image)
         {
             return _shell.Run($"kubectl set image deployment/{image.DeploymentName} {image.ContainerName}={imageUri.uri}:{imageUri.tag} --namespace={image.NameSpace}")
                 .Match<ImageEvent>(

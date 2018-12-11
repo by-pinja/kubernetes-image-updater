@@ -24,6 +24,7 @@ Service gives http callback apis which is easy to integrate most systems via hoo
 Behind scenes kubectl command line tool is used and it needs context and credentials for targeted environment. Basically it needs same kubernetes 'config' file you use when you run commands via kubernetes tooling.
 
 ## In linux
+
 ```bash
 docker run -p 5000:5000 -v /home/yourhome/.kube/:/root/.kube/ -it ptcos/kubernetes-image-updater
 ```
@@ -31,6 +32,7 @@ docker run -p 5000:5000 -v /home/yourhome/.kube/:/root/.kube/ -it ptcos/kubernet
 Then navigate to `http://localhost:5000/doc/`.
 
 ## In windows
+
 ```bash
 docker run -p 5000:5000 -v C:\users\YOUR_HOME\.kube\:/root/.kube/ -it ptcos/kubernetes-image-updater
 ```
@@ -38,6 +40,7 @@ docker run -p 5000:5000 -v C:\users\YOUR_HOME\.kube\:/root/.kube/ -it ptcos/kube
 Then navigate to `http://localhost:5000/doc/`.
 
 ## In kubernetes
+
 ```yaml
 apiVersion: v1
 kind: Deployment

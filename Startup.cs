@@ -55,7 +55,7 @@ namespace Updater
                         .Where(x => x.Value != null)
                         .Select(x => x.Value);
 
-                    options.Keys = keys;
+                    options.ValidApiKeys = keys;
                 });
 
             services.AddSwaggerGen(c =>
