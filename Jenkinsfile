@@ -5,7 +5,7 @@ library 'jenkins-ptcs-library@0.2.5'
 // builds may fail because they reuse same environment if label matches existing.
 podTemplate(label: pod.label,
   containers: pod.templates + [
-    containerTemplate(name: 'dotnet', image: 'microsoft/dotnet:2.1-sdk', ttyEnabled: true, command: '/bin/sh -c', args: 'cat')
+    containerTemplate(name: 'dotnet', image: 'microsoft/dotnet:2.2-sdk', ttyEnabled: true, command: '/bin/sh -c', args: 'cat')
   ]
 ) {
     node(pod.label) {
