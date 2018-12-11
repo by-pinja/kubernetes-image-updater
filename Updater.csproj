@@ -13,7 +13,6 @@
     <PackageReference Include="NSubstitute" Version="3.1.0" />
     <PackageReference Include="Protacon.NetCore.WebApi.ApiKeyAuth" Version="2.1.2" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="5.0.0-beta" />
-    <PackageReference Include="Optional" Version="4.0.0" />
     <PackageReference Include="Protacon.NetCore.WebApi.Util" Version="0.0.4" />
     <PackageReference Include="KubernetesClient" Version="1.3.7-g7c9cc88d38" />
   </ItemGroup>

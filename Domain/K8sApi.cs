@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,7 +10,7 @@ using Microsoft.Extensions.Options;
 
 namespace Updater.Domain
 {
-    public class K8sApi
+    public class K8sApi: IK8sApi
     {
         private readonly Lazy<Kubernetes> _kubernetesClient;
         private readonly ILogger<Kubernetes> _logger;
@@ -35,11 +35,12 @@ namespace Updater.Domain
             return pids.Select(x => new ImageInCluster(x.container.Image, x.container.Name, x.parentDeployment.Metadata.Name, x.parentDeployment.Metadata.NamespaceProperty));
         }
 
-        public void SetImage(ImageInCluster inClusterImage, string newImage)
+        public ImageInCluster SetImage(ImageInCluster inClusterImage, string newImage)
         {
             var patch = new JsonPatchDocument<V1Deployment>();
             patch.Replace(x => x.Spec.Template.Spec.Containers.Single(c => c.Name == inClusterImage.ContainerName).Image, newImage);
             _kubernetesClient.Value.PatchNamespacedDeployment(new V1Patch(patch), inClusterImage.DeploymentName, inClusterImage.NameSpace);
+            return new ImageInCluster(newImage, inClusterImage.ContainerName, inClusterImage.DeploymentName, inClusterImage.NameSpace);
         }
 
         private KubernetesClientConfiguration GetConfig()
