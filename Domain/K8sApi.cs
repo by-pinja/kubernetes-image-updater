@@ -28,25 +28,25 @@ namespace Updater.Domain
             var pods = _kubernetesClient.Value.ListDeploymentForAllNamespaces();
 
             var pids = pods.Items
-                .SelectMany(x => x.Spec.Template.Spec.Containers, (parentDeployment, container) => (parentDeployment: parentDeployment, container: container))
+                .SelectMany(x => x.Spec.Template.Spec.Containers.Select((container, idx) => (idx: idx, container: container)), (parentDeployment, child) => (parentDeployment: parentDeployment, container: child.container, index: child.idx))
                 .Where(x => !x.container.Image.Contains("/google_containers/") && !x.container.Image.Contains("/google-containers/"))
                 .Distinct();
 
-            return pids.Select(x => new ImageInCluster(x.container.Image, x.container.Name, x.parentDeployment.Metadata.Name, x.parentDeployment.Metadata.NamespaceProperty));
+            return pids.Select(x => new ImageInCluster(x.container.Image, x.container.Name, x.parentDeployment.Metadata.Name, x.parentDeployment.Metadata.NamespaceProperty) { ContainerIndex = x.index });
         }
 
         public ImageInCluster SetImage(ImageInCluster inClusterImage, string newImage)
         {
             var patch = new JsonPatchDocument<V1Deployment>();
-            patch.Replace(x => x.Spec.Template.Spec.Containers.Single(c => c.Name == inClusterImage.ContainerName).Image, newImage);
+            patch.Replace(x => x.Spec.Template.Spec.Containers[inClusterImage.ContainerIndex].Image, newImage);
             _kubernetesClient.Value.PatchNamespacedDeployment(new V1Patch(patch), inClusterImage.DeploymentName, inClusterImage.NameSpace);
             return new ImageInCluster(newImage, inClusterImage.ContainerName, inClusterImage.DeploymentName, inClusterImage.NameSpace);
         }
 
         private KubernetesClientConfiguration GetConfig()
         {
-            if(!string.IsNullOrEmpty(_settings.Value.ProxyAddress))
-                return new KubernetesClientConfiguration { Host = _settings.Value.ProxyAddress };
+            if(!string.IsNullOrEmpty(_settings.Value.K8sProxyAddress))
+                return new KubernetesClientConfiguration { Host = _settings.Value.K8sProxyAddress };
 
             _logger.LogInformation($"Proxy not set, using {nameof(KubernetesClientConfiguration.InClusterConfig)}");
             return KubernetesClientConfiguration.InClusterConfig();

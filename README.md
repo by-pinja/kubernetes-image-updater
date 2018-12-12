@@ -44,10 +44,9 @@ Then navigate to `http://localhost:5000/doc/`.
 ```yaml
 apiVersion: v1
 kind: Deployment
-apiVersion: extensions/v1beta1
 metadata:
   name: image-updater
-  namespace: you-namespace
+  namespace: your-namespace
   labels:
     app: image-updater
 spec:

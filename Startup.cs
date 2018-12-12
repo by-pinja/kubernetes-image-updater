@@ -27,7 +27,7 @@ namespace Updater
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<UpdaterDbContext>(options => options.UseInMemoryDatabase(databaseName: "db"));
-            services.AddSingleton<IK8sApi>();
+            services.AddSingleton<IK8sApi, K8sApi>();
             services.AddTransient<ImageUpdater>();
             services.Configure<AppSettings>(Configuration);
 
