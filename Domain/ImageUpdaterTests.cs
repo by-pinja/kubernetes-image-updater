@@ -4,8 +4,6 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
-using Optional;
-using Updater.Domain.TestData;
 using Updater.Util;
 using Xunit;
 
@@ -14,99 +12,63 @@ namespace Updater.Domain
     public class ImageUpdaterTests
     {
         [Fact]
-        public void WhenValidJsonIsRespondedFromCtl_ThenInvokeUpdateCommandsCorretly()
+        public void WhenValidImageIsFound_ThenItWillBeUpdated()
         {
-            var shell = Substitute.For<ICommandLine>();
-            var updater = new ImageUpdater(shell, Substitute.For<ILogger<ImageUpdater>>(), TestUtils.CreateInMemoryContext(), TestUtils.GetAppSettings(".*master.*"));
+            var k8sApi = Substitute.For<IK8sApi>();
+            var updater = new ImageUpdater(Substitute.For<ILogger<ImageUpdater>>(), TestUtils.CreateInMemoryContext(), TestUtils.GetAppSettings(), k8sApi);
 
-            shell.Run(Arg.Any<string>()).Returns("result".Some<string, Exception>());
-            shell.Run("kubectl get deployments --all-namespaces -o json")
-                .Returns(TestPathUtil.GetTestDataContent("realdata.json").Some<string, Exception>());
+            var imageInCluster = new ImageInCluster("eu.gcr.io/ptcs-docker-registry/authorization:123-master", containerName: "authorization-master", deploymentName: "authorization-master", nameSpace: "authorization" );
+            k8sApi.GetImages().Returns(new [] { imageInCluster });
 
-            updater.UpdateEventHandler("eu.gcr.io/ptcs-docker-registry/authorization:123-master");
+            updater.UpdateEventHandler("eu.gcr.io/ptcs-docker-registry/authorization:999-master");
 
-            shell.Received(1).Run("kubectl set image deployment/authorization-master authorization-master=eu.gcr.io/ptcs-docker-registry/authorization:123-master --namespace=authorization");
+            k8sApi.Received(1).SetImage(Arg.Is<ImageInCluster>(x => x.Image == imageInCluster.Image), "eu.gcr.io/ptcs-docker-registry/authorization:999-master");
         }
 
         [Fact]
         public void WhenTagFilteringIsSet_ThenDontUpdateNonMatchingImages()
         {
-            var shell = Substitute.For<ICommandLine>();
-            var updater = new ImageUpdater(shell, Substitute.For<ILogger<ImageUpdater>>(), TestUtils.CreateInMemoryContext(), TestUtils.GetAppSettings(".*this_is_not_match.*"));
+            var k8sApi = Substitute.For<IK8sApi>();
+            var updater = new ImageUpdater(Substitute.For<ILogger<ImageUpdater>>(), TestUtils.CreateInMemoryContext(), TestUtils.GetAppSettings(imageTagValidator: ".*this_is_not_match.*"), k8sApi);
 
-            shell.Run(Arg.Any<string>()).Returns("result".Some<string, Exception>());
-            shell.Run("kubectl get deployments --all-namespaces -o json")
-                .Returns(TestPathUtil.GetTestDataContent("realdata.json").Some<string, Exception>());
+            var imageInCluster = new ImageInCluster("eu.gcr.io/ptcs-docker-registry/authorization:123-master", containerName: "authorization-master", deploymentName: "authorization-master", nameSpace: "authorization" );
+            k8sApi.GetImages().Returns(new [] { imageInCluster });
 
             updater.UpdateEventHandler("eu.gcr.io/ptcs-docker-registry/authorization:123-master");
 
-            shell.DidNotReceive().Run(Arg.Is<string>(x => x.Contains("kubectl set image")));
+            k8sApi.DidNotReceive().SetImage(Arg.Any<ImageInCluster>(), Arg.Any<string>());
         }
 
         [Fact]
         public void WhenValidJsonIsRespondedFromCtl_ThenOnlyUpdateMatchingDeployments()
         {
-            var shell = Substitute.For<ICommandLine>();
-            var updater = new ImageUpdater(shell, Substitute.For<ILogger<ImageUpdater>>(), TestUtils.CreateInMemoryContext(), TestUtils.GetAppSettings());
+            var k8sApi = Substitute.For<IK8sApi>();
+            var updater = new ImageUpdater(Substitute.For<ILogger<ImageUpdater>>(), TestUtils.CreateInMemoryContext(), TestUtils.GetAppSettings(), k8sApi);
 
-            shell.Run(Arg.Any<string>()).Returns("result".Some<string, Exception>());
-            shell.Run("kubectl get deployments --all-namespaces -o json")
-                .Returns(TestPathUtil.GetTestDataContent("realdata.json").Some<string, Exception>());
+            var matchingImageInCluster = new ImageInCluster("eu.gcr.io/ptcs-docker-registry/authorization:123-master", containerName: "authorization-master", deploymentName: "authorization-master", nameSpace: "authorization" );
+            var nonMatchinImageInCluster = new ImageInCluster("node:latest", containerName: "authorization-master", deploymentName: "authorization-master", nameSpace: "authorization" );
+
+            k8sApi.GetImages().Returns(new [] { matchingImageInCluster, nonMatchinImageInCluster });
 
             var result = updater.UpdateEventHandler("eu.gcr.io/ptcs-docker-registry/authorization:123-master");
 
-            shell.Received(1).Run(Arg.Is<string>(cmd => cmd.Contains("kubectl set image")));
+            k8sApi.Received(1).SetImage(Arg.Any<ImageInCluster>(), Arg.Any<string>());
             result.Should().Contain(x => x.Image == "eu.gcr.io/ptcs-docker-registry/authorization");
         }
 
         [Fact]
-        public void WhenValidJsonIsRespondedFromCtl_ThenPersistUpdates()
+        public void WhenImageIsUpdated_ThenPersistUpdates()
         {
-            var shell = Substitute.For<ICommandLine>();
             var db = TestUtils.CreateInMemoryContext();
-            var updater = new ImageUpdater(shell, Substitute.For<ILogger<ImageUpdater>>(), db, TestUtils.GetAppSettings());
+            var k8sApi = Substitute.For<IK8sApi>();
+            var updater = new ImageUpdater(Substitute.For<ILogger<ImageUpdater>>(), db, TestUtils.GetAppSettings(".*"), k8sApi);
 
-            shell.Run(Arg.Any<string>()).Returns("result".Some<string, Exception>());
-            shell.Run("kubectl get deployments --all-namespaces -o json")
-                .Returns(TestPathUtil.GetTestDataContent("realdata.json").Some<string, Exception>());
+            var imageInCluster = new ImageInCluster("eu.gcr.io/ptcs-docker-registry/authorization:123-master", containerName: "authorization-master", deploymentName: "authorization-master", nameSpace: "authorization" );
+            k8sApi.GetImages().Returns(new [] { imageInCluster });
 
             updater.UpdateEventHandler("eu.gcr.io/ptcs-docker-registry/authorization:123-master");
 
             db.EventHistory.Should().Contain(x => x.Image == "eu.gcr.io/ptcs-docker-registry/authorization" && x.Tag == "123-master");
-        }
-
-        [Fact]
-        public void WhenGatheringDeploymentsReturnsError_ThenLogError()
-        {
-            var shell = Substitute.For<ICommandLine>();
-            var logger = Substitute.For<ILogger<ImageUpdater>>();
-            var updater = new ImageUpdater(shell, logger, TestUtils.CreateInMemoryContext(), TestUtils.GetAppSettings());
-
-            shell.Run(Arg.Any<string>()).Returns("result".Some<string, Exception>());
-            shell.Run("kubectl get deployments --all-namespaces -o json")
-                .Returns(Option.None<string, Exception>(new InvalidOperationException()));
-
-            updater.UpdateEventHandler("eu.gcr.io/ptcs-docker-registry/authorization:123-master");
-
-            shell.DidNotReceive().Run(Arg.Is<string>(cmd => cmd.Contains("kubectl set image")));
-            logger.CheckErrorMessage();
-        }
-
-        [Fact]
-        public void WhenUpdingImageReturnsError_ThenLogIt()
-        {
-            var shell = Substitute.For<ICommandLine>();
-            var logger = Substitute.For<ILogger<ImageUpdater>>();
-            var updater = new ImageUpdater(shell, logger, TestUtils.CreateInMemoryContext(), TestUtils.GetAppSettings());
-
-            shell.Run("kubectl get deployments --all-namespaces -o json")
-                .Returns(TestPathUtil.GetTestDataContent("realdata.json").Some<string, Exception>());
-
-            shell.Run(Arg.Is<string>(cmd => cmd.Contains("kubectl set image")))
-                .Returns(Option.None<string, Exception>(new InvalidOperationException()));
-
-            updater.UpdateEventHandler("eu.gcr.io/ptcs-docker-registry/authorization:123-master");
-            logger.CheckErrorMessage();
         }
     }
 }

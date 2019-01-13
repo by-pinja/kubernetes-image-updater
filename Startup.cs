@@ -27,21 +27,13 @@ namespace Updater
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<UpdaterDbContext>(options => options.UseInMemoryDatabase(databaseName: "db"));
+            services.AddSingleton<IK8sApi, K8sApi>();
             services.AddTransient<ImageUpdater>();
             services.Configure<AppSettings>(Configuration);
 
             services.AddMvc(options => options.Filters.Add(new ValidateModelAttribute()));
 
             bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-
-            if (isWindows)
-            {
-                services.AddTransient<ICommandLine, CommandLineWindows>();
-            }
-            else
-            {
-                services.AddTransient<ICommandLine, CommandLineBashLinux>();
-            }
 
             services
                 .AddAuthentication()
@@ -55,7 +47,7 @@ namespace Updater
                         .Where(x => x.Value != null)
                         .Select(x => x.Value);
 
-                    options.Keys = keys;
+                    options.ValidApiKeys = keys;
                 });
 
             services.AddSwaggerGen(c =>

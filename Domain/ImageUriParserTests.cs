@@ -9,28 +9,28 @@ namespace Updater.Domain
         [Fact]
         public void WhenEmptyTagIsDefined_ThenReturnItAsLatest()
         {
-            var result = ImageUriParser.ParseUri("domain.eu/image");
+            var (uri, tag) = ImageUriParser.ParseUri("domain.eu/image");
 
-            result.tag.Should().Be("latest");
-            result.uri.Should().Be("domain.eu/image");
+            tag.Should().Be("latest");
+            uri.Should().Be("domain.eu/image");
         }
 
         [Fact]
         public void WhenTagAndUriIsGiven_ThenParseResultsCorrectly()
         {
-            var result = ImageUriParser.ParseUri("domain.eu/image:sometag");
+            var (uri, tag) = ImageUriParser.ParseUri("domain.eu/image:sometag");
 
-            result.tag.Should().Be("sometag");
-            result.uri.Should().Be("domain.eu/image");
+            tag.Should().Be("sometag");
+            uri.Should().Be("domain.eu/image");
         }
 
         [Fact]
         public void WhenImageWithoutDomainIsGiven_ThenParseItAsExpected()
         {
-            var result = ImageUriParser.ParseUri("image:sometag");
+            var (uri, tag) = ImageUriParser.ParseUri("image:sometag");
 
-            result.tag.Should().Be("sometag");
-            result.uri.Should().Be("image");
+            tag.Should().Be("sometag");
+            uri.Should().Be("image");
         }
 
         [Fact]
