@@ -10,7 +10,7 @@ with command like `kubectl set image deployment/image-$branch image-$branch=$pub
 
 However this raises many issues:
 
-- When multiple projects use same container (which is common case) i
+- When multiple projects use same container (which is common case) they
   need to reconfigure existing CI pipeline for shared container to update everything.
 - What happens if you delete old project namespace from testing environment? Build will fail...
 - Unnecessary boilerplate.
@@ -20,14 +20,14 @@ However this raises many issues:
 When event about updated image arrives, scan current cluster through for
 matching images and if any is found, then update image to current version.
 
-Service gives http callback apis which is easy to integrate most systems
-via hooks. Theres also possibility to integrate this directly GCR registry
+Service gives http callback apis which are easy to integrate to most systems
+via hooks. Theres also possibility to integrate this directly with GCR registry
 with pub events and functions, however we don't use them so there are no
-'ready to use' example available.
+'ready to use' examples available.
 
 ## Running in kubernetes
 
-Software uses kuberetes 'InClusterConfiguration' model and has acces for it's
+Software uses kuberetes 'InClusterConfiguration' model and has access for it's
 current cluster.
 
 ```yaml
