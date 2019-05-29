@@ -23,14 +23,5 @@ namespace Updater.Util
         {
             return Options.Create(new AppSettings() { UpdateTagsMatching = imageTagValidator });
         }
-
-        public static UpdaterDbContext CreateInMemoryContext()
-        {
-                var options = new DbContextOptionsBuilder<UpdaterDbContext>()
-                    .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-                    .Options;
-
-                return new UpdaterDbContext(options);
-        }
     }
 }

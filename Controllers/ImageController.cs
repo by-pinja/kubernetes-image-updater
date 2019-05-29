@@ -10,12 +10,10 @@ namespace Updater.Controllers
 {
     public class ImageController: Controller
     {
-        private readonly UpdaterDbContext _context;
         private readonly ImageUpdater _updater;
 
-        public ImageController(UpdaterDbContext context, ImageUpdater updater)
+        public ImageController(ImageUpdater updater)
         {
-            _context = context;
             _updater = updater;
         }
 
@@ -24,25 +22,6 @@ namespace Updater.Controllers
         public ActionResult<IEnumerable<ImageEvent>> UpdateImages([Required][FromBody] UpdateRequest request)
         {
             return Ok(_updater.UpdateEventHandler(request.GetFullImageUri()));
-        }
-
-        [HttpGet("/api/history/{imageName}")]
-        public IActionResult GetUpdatesForImage(string imageName)
-        {
-            return Ok(_context.EventHistory
-                .Where(x => x.Image == imageName)
-                .OrderByDescending(x => x.Stamp)
-                .ToList());
-        }
-
-        [HttpGet("/api/history/{imageName}/current")]
-        public IActionResult GetLatestUpdate(string imageName)
-        {
-            return Ok(_context.EventHistory
-                .Where(x => x.Image == imageName)
-                .OrderByDescending(x => x.Stamp)
-                .Take(1)
-                .ToList());
         }
     }
 }
