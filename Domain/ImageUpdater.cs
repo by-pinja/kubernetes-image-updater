@@ -40,11 +40,11 @@ namespace Updater.Domain
                 Deployment = image.DeploymentName,
                 NameSpace = image.NameSpace,
                 TimeStamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                Action = ResolveAction(image)
+                Message = ResolveMessage(image)
             });
         }
 
-        private string ResolveAction(ImageInCluster image)
+        private string ResolveMessage(ImageInCluster image)
         {
             if(image.ImagePullPolicy == "Always")
             {

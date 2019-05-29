@@ -9,6 +9,6 @@ namespace Updater.Domain
         public string NameSpace { get; internal set; }
         public string Deployment { get; internal set; }
         public long TimeStamp { get; set; }
-        public string Action { get; set; }
+        public string Message { get; set; }
     }
 }
