@@ -40,7 +40,7 @@ namespace Updater.Domain
                 Tag = parsedUri.tag,
                 Deployment = x.DeploymentName,
                 NameSpace = x.NameSpace,
-                Stamp = DateTime.UtcNow
+                TimeStamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
             });
         }
 
