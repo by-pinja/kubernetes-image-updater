@@ -19,27 +19,10 @@ On real installations we strongly recommended by using service with google servi
 
 Service gives http callback apis which is easy to integrate most systems via hooks. Theres also possibility to integrate this directly GCR registry with pub events and functions, however we don't use them so there are no 'ready to use' example available.
 
-# Running service
+## Running in kubernetes
 
-Behind scenes kubectl command line tool is used and it needs context and credentials for targeted environment. Basically it needs same kubernetes 'config' file you use when you run commands via kubernetes tooling.
-
-## In linux
-
-```bash
-docker run -p 5000:5000 -v /home/yourhome/.kube/:/root/.kube/ -it ptcos/kubernetes-image-updater
-```
-
-Then navigate to `http://localhost:5000/doc/`.
-
-## In windows
-
-```bash
-docker run -p 5000:5000 -v C:\users\YOUR_HOME\.kube\:/root/.kube/ -it ptcos/kubernetes-image-updater
-```
-
-Then navigate to `http://localhost:5000/doc/`.
-
-## In kubernetes
+Software uses kuberetes 'InClusterConfiguration' model and has acces for it's
+current cluster.
 
 ```yaml
 apiVersion: v1
@@ -60,24 +43,18 @@ spec:
       - image: ptcos/kubernetes-image-updater:latest
         imagePullPolicy: Always
         name: image-updater
-        volumeMounts:
-        - name: config-volume
-          mountPath: /root/.kube/
-      volumes:
-      - name: config-volume
-        configMap:
-          name: image-updater-kubectl
-          items:
-          - key: config
-            path: config
 ```
 
 You must put your kubernetes config file to `image-updater-kubectl` config map.
 
 # Setting up development environment
+
+Open proxy to connect targeted testing cluster.
+
 ```bash
-dotnet restore
-dotnet run
+kubectl proxy
+dotnet run --environment=Development
+
 ```
 
 Navigate to `http://localhost:5000/doc/`.

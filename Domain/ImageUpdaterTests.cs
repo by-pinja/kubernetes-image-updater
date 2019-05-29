@@ -1,8 +1,5 @@
-using System;
-using System.Linq;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using NSubstitute;
 using Updater.Util;
 using Xunit;

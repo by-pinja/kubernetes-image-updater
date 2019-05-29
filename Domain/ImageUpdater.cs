@@ -4,13 +4,12 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Linq;
 
 namespace Updater.Domain
 {
-    public partial class ImageUpdater
+    public class ImageUpdater
     {
-        private readonly Microsoft.Extensions.Logging.ILogger<ImageUpdater> _logger;
+        private readonly ILogger<ImageUpdater> _logger;
         private readonly UpdaterDbContext _context;
         private readonly Regex _tagFilter;
         private readonly IK8sApi _k8sApi;
@@ -29,7 +28,7 @@ namespace Updater.Domain
 
             return _k8sApi.GetImages()
                 .Where(currentClusterImage => CheckIfImageIsApplicapleForDeployment(currentClusterImage, parsedUri))
-                .Select(image => SetNewImage(parsedUri, image))
+                .Select(image => UpdateEventHistory(parsedUri, image))
                 .ToList();
         }
 
@@ -42,9 +41,8 @@ namespace Updater.Domain
             return isApplicaple;
         }
 
-        private ImageEvent SetNewImage((string uri, string tag) imageUri, ImageInCluster image)
+        private ImageEvent UpdateEventHistory((string uri, string tag) imageUri, ImageInCluster image)
         {
-            var newImage = _k8sApi.SetImage(image, $"{imageUri.uri}:{imageUri.tag}");
             var entity = _context.EventHistory.Add(new ImageEvent()
             {
                 Image = imageUri.uri,
