@@ -41,7 +41,7 @@ namespace Updater.Domain
         public ImageInCluster ForceUpdateOfDeployment(ImageInCluster inClusterImage)
         {
             var patch = new JsonPatchDocument<V1Deployment>();
-            patch.Replace(x => x.Spec.Template.Metadata.Labels["kubernetes-imageupdater-updated-timestamp"], DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString());
+            patch.Replace(x => x.Spec.Template.Metadata.Labels["kubernetes-image-updater-updated-timestamp"], DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString());
             _kubernetesClient.Value.PatchNamespacedDeployment(new V1Patch(patch), inClusterImage.DeploymentName, inClusterImage.NameSpace);
             return inClusterImage;
         }

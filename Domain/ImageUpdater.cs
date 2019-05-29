@@ -30,18 +30,28 @@ namespace Updater.Domain
             foreach(var imageToUpdate in imagesToUpdate)
             {
                 _k8sApi.ForceUpdateOfDeployment(imageToUpdate);
-
                 _logger.LogInformation($"Updated image 'deployment/{imageToUpdate.DeploymentName} {imageToUpdate.ContainerName}={parsedUri.uri}:{parsedUri.tag} --namespace={imageToUpdate.NameSpace}'");
             }
 
-            return imagesToUpdate.Select(x => new ImageEvent()
+            return imagesToUpdate.Select(image => new ImageEvent()
             {
                 Image = parsedUri.uri,
                 Tag = parsedUri.tag,
-                Deployment = x.DeploymentName,
-                NameSpace = x.NameSpace,
-                TimeStamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+                Deployment = image.DeploymentName,
+                NameSpace = image.NameSpace,
+                TimeStamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                Action = ResolveAction(image)
             });
+        }
+
+        private string ResolveAction(ImageInCluster image)
+        {
+            if(image.ImagePullPolicy == "Always")
+            {
+                return "Updated";
+            }
+
+            return $"Image pull policy was '{image.ImagePullPolicy}', expected to it be 'Always'. This likely causes image not to be updated as expected.";
         }
 
         private bool CheckIfImageIsApplicapleForDeployment(ImageInCluster currentClusterImage, (string uri, string tag) parsedUri)
