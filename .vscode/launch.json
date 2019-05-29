@@ -20,7 +20,7 @@
             },
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Development",
-                "APIKEYS__0": "foo"
+                "APIKEYS__0": "apikeyfortesting"
             }
         },
         {
