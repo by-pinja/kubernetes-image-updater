@@ -1,0 +1,25 @@
+{
+  "version": "1",
+  "actions": [
+    {
+      "type": "new_issue",
+      "channel": "#devops"
+    },
+    {
+      "type": "pull_request",
+      "channel": "#devops"
+    },
+    {
+      "type": "review_request",
+      "channel": "#devops"
+    },
+    {
+      "type": "review_status",
+      "channel": "#devops"
+    },
+    {
+      "type": "jenkins_build_tag",
+      "channel": "#devops"
+    }
+  ]
+}
