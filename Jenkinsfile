@@ -27,6 +27,7 @@ podTemplate(label: pod.label,
             }
         }
         stage('Build Image') {
+            publishContainerToGcr("kubernetes-image-updater");
             publishTagToDockerhub("kubernetes-image-updater")
         }
     }
