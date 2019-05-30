@@ -12,13 +12,6 @@ podTemplate(label: pod.label,
         stage('Checkout') {
             checkout scm
         }
-        stage('Build') {
-            container('dotnet') {
-                sh """
-                    dotnet publish -c release -o out
-                """
-            }
-        }
         stage('Test') {
             container('dotnet') {
                 sh """
