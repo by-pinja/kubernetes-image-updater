@@ -4,59 +4,65 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Linq;
 
 namespace Updater.Domain
 {
-    public partial class ImageUpdater
+    public class ImageUpdater
     {
-        private readonly Microsoft.Extensions.Logging.ILogger<ImageUpdater> _logger;
-        private readonly UpdaterDbContext _context;
+        private readonly ILogger<ImageUpdater> _logger;
         private readonly Regex _tagFilter;
         private readonly IK8sApi _k8sApi;
 
-        public ImageUpdater(ILogger<ImageUpdater> logger, UpdaterDbContext context, IOptions<AppSettings> settings, IK8sApi k8sApi)
+        public ImageUpdater(ILogger<ImageUpdater> logger, IOptions<AppSettings> settings, IK8sApi k8sApi)
         {
             _logger = logger;
-            _context = context;
             _tagFilter = new Regex(settings.Value.UpdateTagsMatching);
             _k8sApi = k8sApi;
         }
 
-        public IEnumerable<ImageEvent> UpdateEventHandler(string newImageUri)
+        public IEnumerable<ImageEvent> UpdateEventHandler(string imageToUpdateUri)
         {
-            var parsedUri = ImageUriParser.ParseUri(newImageUri);
+            var parsedUri = ImageUriParser.ParseUri(imageToUpdateUri);
 
-            return _k8sApi.GetImages()
-                .Where(currentClusterImage => CheckIfImageIsApplicapleForDeployment(currentClusterImage, parsedUri))
-                .Select(image => SetNewImage(parsedUri, image))
-                .ToList();
+            var imagesToUpdate = _k8sApi.GetImages()
+                .Where(currentClusterImage => CheckIfImageIsApplicapleForDeployment(currentClusterImage, parsedUri));
+
+            foreach(var imageToUpdate in imagesToUpdate)
+            {
+                _k8sApi.ForceUpdateOfDeployment(imageToUpdate);
+                _logger.LogInformation($"Updated image 'deployment/{imageToUpdate.DeploymentName} {imageToUpdate.ContainerName}={parsedUri.uri}:{parsedUri.tag} --namespace={imageToUpdate.NameSpace}'");
+            }
+
+            return imagesToUpdate.Select(image => new ImageEvent()
+            {
+                Image = parsedUri.uri,
+                Tag = parsedUri.tag,
+                Deployment = image.DeploymentName,
+                NameSpace = image.NameSpace,
+                TimeStamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                Message = ResolveMessage(image)
+            });
+        }
+
+        private string ResolveMessage(ImageInCluster image)
+        {
+            if(image.ImagePullPolicy == "Always")
+            {
+                return "Updated";
+            }
+
+            return $"Image pull policy was '{image.ImagePullPolicy}', expected to it be 'Always'. This likely causes image not to be updated as expected.";
         }
 
         private bool CheckIfImageIsApplicapleForDeployment(ImageInCluster currentClusterImage, (string uri, string tag) parsedUri)
         {
-            var isApplicaple = _tagFilter.IsMatch(ImageUriParser.ParseUri(currentClusterImage.Image).tag) && ImageUriParser.ParseUri(currentClusterImage.Image).uri == parsedUri.uri;
+            var isApplicaple = _tagFilter.IsMatch(parsedUri.tag)
+                && ImageUriParser.ParseUri(currentClusterImage.Image).uri == parsedUri.uri
+                && ImageUriParser.ParseUri(currentClusterImage.Image).tag == parsedUri.tag;
 
             _logger.LogDebug($"Checked {ImageUriParser.ParseUri(currentClusterImage.Image)} against {parsedUri} and {nameof(isApplicaple)} returned {isApplicaple}");
 
             return isApplicaple;
-        }
-
-        private ImageEvent SetNewImage((string uri, string tag) imageUri, ImageInCluster image)
-        {
-            var newImage = _k8sApi.SetImage(image, $"{imageUri.uri}:{imageUri.tag}");
-            var entity = _context.EventHistory.Add(new ImageEvent()
-            {
-                Image = imageUri.uri,
-                Tag = imageUri.tag,
-                Stamp = DateTime.UtcNow
-            }).Entity;
-
-            _context.SaveChanges();
-
-            _logger.LogInformation($"Updated image 'deployment/{image.DeploymentName} {image.ContainerName}={imageUri.uri}:{imageUri.tag} --namespace={image.NameSpace}'");
-
-            return entity;
         }
     }
 }

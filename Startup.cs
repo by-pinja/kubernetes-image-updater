@@ -1,16 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.OpenApi.Models;
 using Protacon.NetCore.WebApi.ApiKeyAuth;
 using Protacon.NetCore.WebApi.Util.ModelValidation;
-using Swashbuckle.AspNetCore.Swagger;
 using Updater.Domain;
 
 namespace Updater
@@ -26,7 +24,6 @@ namespace Updater
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<UpdaterDbContext>(options => options.UseInMemoryDatabase(databaseName: "db"));
             services.AddSingleton<IK8sApi, K8sApi>();
             services.AddTransient<ImageUpdater>();
             services.Configure<AppSettings>(Configuration);
@@ -39,7 +36,7 @@ namespace Updater
                 .AddAuthentication()
                 .AddApiKeyAuth(options =>
                 {
-                    if(Configuration.GetChildren().All(x => x.Key != "apiKeys"))
+                    if (Configuration.GetChildren().All(x => x.Key != "apiKeys"))
                         throw new InvalidOperationException($"Expected 'apiKeys' section.");
 
                     var keys = Configuration.GetSection("apiKeys")
@@ -52,13 +49,17 @@ namespace Updater
 
             services.AddSwaggerGen(c =>
             {
+                var basePath = System.AppContext.BaseDirectory;
+
                 c.SwaggerDoc("v1",
-                    new Info
+                    new OpenApiInfo
                     {
                         Title = "Kubernetes image updater",
-                        Version = "v1"
+                        Version = "v1",
+                        Description = File.ReadAllText(Path.Combine(basePath, "README.md"))
                     });
-                c.OperationFilter<ApplyApiKeySecurityToDocument>();
+                c.AddSecurityDefinition("ApiKey", ApiKey.OpenApiSecurityScheme);
+                c.AddSecurityRequirement(ApiKey.OpenApiSecurityRequirement("ApiKey"));
             });
         }
 

@@ -12,13 +12,6 @@ podTemplate(label: pod.label,
         stage('Checkout') {
             checkout scm
         }
-        stage('Build') {
-            container('dotnet') {
-                sh """
-                    dotnet publish -c release -o out
-                """
-            }
-        }
         stage('Test') {
             container('dotnet') {
                 sh """
@@ -27,6 +20,7 @@ podTemplate(label: pod.label,
             }
         }
         stage('Build Image') {
+            publishContainerToGcr("kubernetes-image-updater");
             publishTagToDockerhub("kubernetes-image-updater")
         }
     }

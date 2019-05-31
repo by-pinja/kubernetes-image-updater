@@ -5,6 +5,6 @@ namespace Updater.Domain
     public interface IK8sApi
     {
         IEnumerable<ImageInCluster> GetImages();
-        ImageInCluster SetImage(ImageInCluster inClusterImage, string newImage);
+        ImageInCluster ForceUpdateOfDeployment(ImageInCluster inClusterImage);
     }
 }
