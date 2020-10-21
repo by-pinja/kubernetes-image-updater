@@ -1,4 +1,4 @@
-library 'jenkins-ptcs-library@2.2.0'
+library 'jenkins-ptcs-library@3.0.0'
 
 // Podtemplate and node must match, dont use generic names like 'node', use more specific like projectname or node + excact version number.
 // This is because CI environment reuses templates based on naming, if you create node 7 environment with name 'node', following node 8 environment
